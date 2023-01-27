@@ -85,7 +85,7 @@
         "field-name": "agency2",
         "term-uri-field": "agency2",
         "js-url": "/dataexplore/dataverse-external-vocab-support/scripts/funders.js",
-        "protocol": "orcid2",
+        "protocol": "orcid",
         "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
         "allow-free-text": true,
         "prefix": "https://orcid.org/",

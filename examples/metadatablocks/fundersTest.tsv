@@ -1,0 +1,4 @@
+#metadataBlock	name	dataverseAlias	displayName													
+	fundersTest		Funders Metadata													
+#datasetField	name	title	description	watermark	 fieldType	displayOrder	displayFormat	advancedSearchField	allowControlledVocabulary	allowmultiples	facetable	displayoncreate	required	parent	metadatablock_id	termURI
+	agency2	Funding Agency	The agency that provided financial support for the Dataset	NIH	text	0	<span class='person' data-x='<a' >#VALUE</span>	TRUE	FALSE	TRUE	TRUE	TRUE	FALSE		fundersTest	https://schema.org/funder
