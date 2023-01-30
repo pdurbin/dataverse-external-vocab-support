@@ -20,25 +20,46 @@ function expandPeople2() {
             //Mark it as processed
             $(personElement).addClass('expanded');
             var id = personElement.textContent;
+            // 27 http://dx.doi.org/10.13039/100000002
+            // 18 https://orcid.org/ 
+            console.log("id: " + id);
+            var justid = id.substring(27);
+            console.log("justid: " + justid);
+            // can't use "fundingdata" because CORS is not enabled
+            //var url = "http://data.crossref.org/fundingdata/funder/10.13039/" + justid;
+            // curl http://data.crossref.org/fundingdata/funder/10.13039/100000001 | jq '.prefLabel.Label.literalForm.content'
+            //        var name = person.prefLabel.Label.literalForm.content;
+            var url = "https://api.crossref.org/funders/" + justid;
+            console.log("url: " + url);
+            //url = "http://localhost/" + justid;
+            /*
             if (id.startsWith("https://orcid.org/")) {
                 id = id.substring(18);
             }
+            */
             //Try it as an ORCID (could validate that it has the right form and even that it validates as an ORCID, or can just let the GET fail
             $.ajax({
                 type: "GET",
-                url: "https://pub.orcid.org/v3.0/" + id + "/person",
+                //url: "https://pub.orcid.org/v3.0/" + id + "/person",
+                url: url,
                 dataType: 'json',
                 headers: {
                     'Accept': 'application/json'
                 },
                 success: function(person, status) {
+                    console.log("found data for id " + id);
+                    console.log("found data for url " + url);
+                    console.log(person);
                     //If found, construct the HTML for display
-                    var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
+                    //var name = person.name['family-name'].value + ", " + person.name['given-names'].value;
+                    var name = person.message.name;
                     console.log("name: " + name);
-                    var html = "<a href='https://orcid.org/" + id + "' target='_blank' rel='noopener' >" + name + "</a>";
+                    //var html = "<a href='https://orcid.org/" + id + "' target='_blank' rel='noopener' >" + name + "</a>";
+                    var html = "<a href='" + id + "' target='_blank' rel='noopener' >" + name + "</a>";
                     console.log("html: " + html);
                     personElement.innerHTML = html;
                     //If email is public, show it using the jquery popover functionality
+                    /*
                     if (person.emails.email.length > 0) {
                         $(personElement).popover({
                             content: person.emails.email[0].email,
@@ -52,6 +73,7 @@ function expandPeople2() {
                             $(this).popover('hide');
                         };
                     }
+                    */
                     //Store the most recent 100 ORCIDs - could cache results, but currently using this just to prioritized recently used ORCIDs in search results
                     if (localStorage.length > 100) {
                         localStorage.removeItem(localStorage.key(0));
@@ -59,6 +81,7 @@ function expandPeople2() {
                     localStorage.setItem(id, name);
                 },
                 failure: function(jqXHR, textStatus, errorThrown) {
+                    console.error("The following error occurred... " + textStatus, errorThrown);
                     //Generic logging - don't need to do anything if 404 (leave display as is)
                     if (jqXHR.status != 404) {
                         console.error("The following error occurred: " + textStatus, errorThrown);
@@ -126,15 +149,25 @@ function updatePeopleInputs2() {
                             term = "";
                         }
                         //Use expanded-search to get the names, email directly in the results
-                        return "https://pub.orcid.org/v3.0/expanded-search";
+                        //return "https://pub.orcid.org/v3.0/expanded-search";
+                        return "https://api.crossref.org/funders";
+                        //?query=National+Institutes+of+Health&filter=location:United+States
                     },
                     data: function(params) {
                         term = params.term;
+                        console.log("term: " + term);
                         if (!term) {
                             term = "";
+                            console.log("no term! now, term: " + term);
+                        }
+                        if (term == "nih") {
+                            term = "National Institutes of Health";
+                            console.log("nih changed to: " + term);
                         }
                         var query = {
-                            q: term,
+                            //q: term,
+                            query: term,
+                            //query: "NIH",
                             //Currently we just get the top 10 hits. We could get, for example, the top 50, sort as below to put recently used orcids at the top, and then limit to 10
                             rows: 10
                         }
@@ -147,17 +180,22 @@ function updatePeopleInputs2() {
                     processResults: function(data, page) {
                         console.log(data);
                         return {
-                            results: data['expanded-result']
+                            //results: data['expanded-result']
+                            results: data['message']['items']
                                 //Sort to bring recently used ORCIDS to the top of the list
                                 .sort((a, b) => (localStorage.getItem(b['orcid-id'])) ? 1 : 0)
                                 .map(
                                     function(x) {
                                         return {
+                                            /*
                                             text: x['given-names'] + " " + x['family-names'] +
                                                 ", " +
                                                 x['orcid-id'] +
                                                 ((x.email.length > 0) ? ", " + x.email[0] : ""),
-                                            id: x['orcid-id'],
+                                                */
+                                            text: x['name'] + ", " + x['uri'],
+                                            //id: x['orcid-id'],
+                                            id: x['uri'],
                                             //Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the ORCID page
                                             //Using title to provide that hint as a popup
                                             title: 'Open in new tab to view ORCID page'
@@ -180,7 +218,7 @@ function updatePeopleInputs2() {
                     },
                     success: function(person, status) {
                         var name = person.name['given-names'].value + " " + person.name['family-name'].value;
-                        console.log("name2: " + name2);
+                        console.log("name: " + name);
                         var text = name + ", " + id;
                         if (person.emails.email.length > 0) {
                             text = text + ", " + person.emails.email[0].email;
@@ -207,7 +245,9 @@ function updatePeopleInputs2() {
                 var data = e.params.data;
                 //For ORCIDs, the id and text are different
                 if (data.id != data.text) {
-                    $("input[data-person='" + num + "']").val("https://orcid.org/" + data.id);
+                    //$("input[data-person='" + num + "']").val("https://orcid.org/" + data.id);
+                    // we want just the funder url
+                    $("input[data-person='" + num + "']").val(data.id);
                 } else {
                     //Tags are allowed, so just enter the text as is
                     $("input[data-person='" + num + "']").val(data.id);
