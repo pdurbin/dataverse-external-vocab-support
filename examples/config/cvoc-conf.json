@@ -2,7 +2,7 @@
     {
         "field-name": "grantNumber",
         "term-uri-field": "grantNumberAgency",
-        "js-url": "/js/dataverse-external-vocab-support/scripts/funders.js",
+        "js-url": "/dataexplore/dataverse-external-vocab-support/scripts/funders.js",
         "protocol": "orcid2",
         "retrieval-uri": "https://pub.orcid.org/v3.0/{0}/person",
         "allow-free-text": true,
