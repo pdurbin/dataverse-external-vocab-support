@@ -124,13 +124,36 @@ function updatePeopleInputs2() {
                     return $result;
                 },
                 templateSelection: function(item) {
+                    console.log("5 item.text1: " + item.text);
                     //For a selection, add HTML to make the ORCID a link
                     var pos = item.text.search(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/);
                     if (pos >= 0) {
+                        console.log("pos greater than zero: " + pos);
                         var orcid = item.text.substr(pos, 19);
                         return $('<span></span>').append(item.text.replace(orcid, "<a href='https://orcid.org/" + orcid + "'>" + orcid + "</a>"));
                     }
-                    return item.text;
+                    console.log("6 item.text2: " + item.text);
+                    // truncate? yes?
+                    //return item.text;
+                    //return item.text.substring(0,35);
+                    //return item.text.substring(0,30);
+                    //const maxLength = 25;
+                    //const maxLength = 29;
+                    //const maxLength = 28;
+                    // 27 looks ok in firefox but not chrome, try 26
+                    //const maxLength = 27;
+                    const maxLength = 26;
+                    //length = item.text.length;
+                    //if (length < maxLength) {
+                    if (item.text.length < maxLength) {
+                        // just show the whole name, short enough
+                        return item.text;
+                    } else {
+                        // show the first characters of a long name
+                        //return item.text.substring(0,25) + "…";
+                        return item.text.substring(0,maxLength) + "…";
+                    }
+
                 },
                 language: {
                     searching: function(params) {
@@ -155,14 +178,14 @@ function updatePeopleInputs2() {
                     },
                     data: function(params) {
                         term = params.term;
-                        console.log("term: " + term);
+                        console.log("1 term: " + term);
                         if (!term) {
                             term = "";
                             console.log("no term! now, term: " + term);
                         }
                         if (term == "nih") {
                             term = "National Institutes of Health";
-                            console.log("nih changed to: " + term);
+                            console.log("2 nih changed to: " + term);
                         }
                         var query = {
                             //q: term,
@@ -178,7 +201,9 @@ function updatePeopleInputs2() {
                         'Accept': 'application/json'
                     },
                     processResults: function(data, page) {
+                        console.log("3 data dump BEGIN");
                         console.log(data);
+                        console.log("3 data dump END");
                         return {
                             //results: data['expanded-result']
                             results: data['message']['items']
@@ -186,6 +211,7 @@ function updatePeopleInputs2() {
                                 .sort((a, b) => (localStorage.getItem(b['orcid-id'])) ? 1 : 0)
                                 .map(
                                     function(x) {
+                                        console.log("4 function(x)");
                                         return {
                                             /*
                                             text: x['given-names'] + " " + x['family-names'] +
@@ -193,12 +219,16 @@ function updatePeopleInputs2() {
                                                 x['orcid-id'] +
                                                 ((x.email.length > 0) ? ", " + x.email[0] : ""),
                                                 */
-                                            text: x['name'] + ", " + x['uri'],
+                                            //text: x['name'] + ", " + x['uri'],
+                                            // FIXME: Do we want "name, URL"?
+                                            text: x['name'],
+                                            // FIXME: truncate?
+                                            //text: x['name'].substring(0,20),
                                             //id: x['orcid-id'],
                                             id: x['uri'],
                                             //Since clicking in the selection re-opens the choice list, one has to use a right click/open in new tab/window to view the ORCID page
                                             //Using title to provide that hint as a popup
-                                            title: 'Open in new tab to view ORCID page'
+                                            title: 'Open in new tab to view funding agency'
                                         }
                                     })
                         };
@@ -236,6 +266,7 @@ function updatePeopleInputs2() {
             } else {
                 //If the initial value is not an ORCID (legacy, or if tags are enabled), just display it as is 
                 var newOption = new Option(id, id, true, true);
+                console.log("newOption: " + newOption);
                 $('#' + selectId).append(newOption).trigger('change');
             }
             //Cound start with the selection menu open
@@ -243,12 +274,19 @@ function updatePeopleInputs2() {
             //When a selection is made, set the value of the hidden input field
             $('#' + selectId).on('select2:select', function(e) {
                 var data = e.params.data;
+                console.log("7 data BEGIN");
+                console.log(data);
+                console.log("8 data END");
+                console.log("9 data.id: " + data.id);
                 //For ORCIDs, the id and text are different
                 if (data.id != data.text) {
+                    // Always here, I guess.
+                    console.log("10 data.id != data.text");
                     //$("input[data-person='" + num + "']").val("https://orcid.org/" + data.id);
                     // we want just the funder url
                     $("input[data-person='" + num + "']").val(data.id);
                 } else {
+                    console.log("10 data.id == data.text");
                     //Tags are allowed, so just enter the text as is
                     $("input[data-person='" + num + "']").val(data.id);
                 }
